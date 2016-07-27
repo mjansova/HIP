@@ -71,6 +71,7 @@ void SiStripAPVRestorer::init(const edm::EventSetup& es){
 
  
 int16_t SiStripAPVRestorer::InspectAndRestore( const uint32_t& detId, const uint16_t& firstAPV, std::vector<int16_t>& rawDigisPedSubtracted,  std::vector<int16_t>& processedRawDigi, const std::vector< std::pair<short,float> >& vmedians ){
+  //std::cout << "in APV inspect and restore " << std::endl;
   int16_t nAPVFlagged = this->inspect(detId, firstAPV, rawDigisPedSubtracted, vmedians);
   this->restore(firstAPV, processedRawDigi);
   return nAPVFlagged;
@@ -119,7 +120,7 @@ void SiStripAPVRestorer::restore(const uint16_t& firstAPV, std::vector<int16_t>&
       if(!SelfSelectRestoreAlgo_) algoToUse = RestoreAlgo_;
  
       if(algoToUse=="Flat"){
-	this->FlatRestore(APV, firstAPV, digis);
+	this->FlatRestore(APV, firstAPV, digis, median_[APV]); //@MJ@ TODO play with flat
       }else if(algoToUse=="BaselineFollower"){
 	this->BaselineFollowerRestore(APV, firstAPV, median_[APV], digis);
       }else{
@@ -151,29 +152,40 @@ int16_t SiStripAPVRestorer::BaselineFollowerInspect(const uint16_t& firstAPV, st
     DigiMap smoothedmap;
     smoothedmap.erase(smoothedmap.begin(), smoothedmap.end());
 
+    //nAPVflagged++; //@MJ@ TODO now fill everything! BASELINE distribution loose its weird shape after using everything
     if(!badAPVs_[APV]){
-      float MeanAPVCM = MeanCM_;
-      if(useRealMeanCM_&&itCMMap!= MeanCMmap_.end()) MeanAPVCM =(itCMMap->second)[APV];
+      //float MeanAPVCM = MeanCM_;
+      //if(useRealMeanCM_&&itCMMap!= MeanCMmap_.end()) MeanAPVCM =(itCMMap->second)[APV];
     
+      nAPVflagged++; //@MJ@ TODO now fill everything! BASELINE distribution loose its weird shape after using everything
+      
       singleAPVdigi.clear(); 
       for(int16_t strip = (APV-firstAPV)*128; strip < (APV-firstAPV+1)*128; ++strip){
         singleAPVdigi.push_back(digis[strip]); 
       }
    
-   
-      float DeltaCM = median_[APV] - MeanAPVCM; 
+      //float DeltaCM = median_[APV] - MeanAPVCM; 
+      apvFlags_[APV]= "";//"BaselineFollower";    //specify any algo to make the restore, was abseline Follower
       
       //std::cout << "Delta CM: " << DeltaCM << " CM: " << median_[APV] << " detId " << (uint32_t) detId_ << std::endl; 	
-      if(DeltaCM < 0 && std::abs(DeltaCM) > DeltaCMThreshold_){
+      //if(DeltaCM < 0 && std::abs(DeltaCM) > DeltaCMThreshold_){ //@MJ@ TODO
+      //if(DeltaCM < 0 && std::abs(DeltaCM) > 400){ //@MJ@ TODO
+      //if(DeltaCM > 0 && std::abs(DeltaCM) > 100){ //@MJ@ TODO
       
-        bool isFlat = FlatRegionsFinder(singleAPVdigi,smoothedmap,APV);
+	//nAPVflagged++; //@MJ@ TODO reduces entries, why?!
+        bool isFlat = FlatRegionsFinder(singleAPVdigi,smoothedmap,APV); //@MJ@ TODO what, why???
         if(!isFlat){
-	      apvFlags_[APV]= "BaselineFollower";    //specify any algo to make the restore
-	      nAPVflagged++;
+	      apvFlags_[APV]= "Flat";//"BaselineFollower";    //specify any algo to make the restore, was abseline Follower
+	      //nAPVflagged++; //@MJ@ TODO reduces entries, why?!
         }
-      }	
+      //else
+      //{
+	  //    apvFlags_[APV]= "";//"BaselineFollower";    //specify any algo to make the restore, was abseline Follower
+      //}
+      //}	
+      }
       
-    } 
+    //} @MJ@ TODO
     SmoothedMaps_.insert(SmoothedMaps_.end(), std::pair<uint16_t, DigiMap>(APV, smoothedmap));
    }
   
@@ -351,12 +363,15 @@ void SiStripAPVRestorer::BaselineFollowerRestore(const uint16_t& APVn, const uin
 
 //======================================================================================================================================================================================================
 inline
-void SiStripAPVRestorer::FlatRestore(const uint16_t& APVn, const uint16_t& firstAPV, std::vector<int16_t>& digis ){
- 
+void SiStripAPVRestorer::FlatRestore(const uint16_t& APVn, const uint16_t& firstAPV, std::vector<int16_t>& digis, const float& median ){
+
+  //std::cout << "flat restore " << std::endl; 
   std::vector<int16_t> baseline;
   baseline.clear();
-  baseline.insert(baseline.begin(),128, 150);
-  baseline[0]=0; baseline[127]=0;
+  //baseline.insert(baseline.begin(),128, 150);
+  //baseline[0]=0; baseline[127]=0;
+  baseline.insert(baseline.begin(),128, median);
+  baseline[0]=-333; //baseline[127]=0;
   BaselineMap_.insert(BaselineMap_.end(),  std::pair< uint16_t, std::vector < int16_t> >(APVn, baseline));  
   
   for(int16_t itStrip= 0 ; itStrip< 128; ++itStrip){
@@ -406,6 +421,7 @@ bool inline SiStripAPVRestorer::FlatRegionsFinder(const std::vector<int16_t>& ad
  
    //if( adcsLocalMinSubtracted[istrip] < nSigmaNoiseDerTh_ * (float)noiseHandle->getNoise(istrip+APVn*128,detNoiseRange) && (adc - median) < hitStripThreshold_){
    if( adcsLocalMinSubtracted[istrip] < nSigmaNoiseDerTh_ * (float)noiseHandle->getNoiseFast(istrip+APVn*128,detNoiseRange)){
+      //std::cout << "noise on consecutive strips: " << nSigmaNoiseDerTh_ * (float)noiseHandle->getNoiseFast(istrip+APVn*128,detNoiseRange) << std::endl;
       consecpoints.insert(consecpoints.end(), std::pair<uint16_t, int16_t >(istrip, adc));
       ++consecStrips;
     }else if (consecStrips >0){
@@ -463,11 +479,12 @@ bool inline SiStripAPVRestorer::FlatRegionsFinder(const std::vector<int16_t>& ad
   }
   
   	
-  if( (MaxSmoothValue-MinSmoothValue) > distortionThreshold_){
+  //if( (MaxSmoothValue-MinSmoothValue) > distortionThreshold_){ //@MJ@ TODO
+  if( (MaxSmoothValue-MinSmoothValue) > 100 || abs((MaxSmoothValue-MinSmoothValue) == 20000)){ //@MJ@ TODO
  	if(ApplyBaselineCleaner_) this->BaselineCleaner(adcs, smoothedpoints, APVn);
 	return false;
   }
-  return true;
+  return true; //@MJ@ TODO what if there is no flat region?!
 }
 
 

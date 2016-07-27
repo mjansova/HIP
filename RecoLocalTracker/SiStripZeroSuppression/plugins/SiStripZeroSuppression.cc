@@ -182,9 +182,11 @@ void SiStripZeroSuppression::storeBaseline(uint32_t id, const std::vector< std::
   edm::DetSet<SiStripProcessedRawDigi> baselineDetSet(id);
   std::map< uint16_t, std::vector < int16_t> >::iterator itBaselineMap;
   
+  //std::cout << "size of vmedians " << vmedians.size() << std::endl;
   for(size_t i=0;i<vmedians.size();++i){
     uint16_t APVn = vmedians[i].first;
     float median = vmedians[i].second;
+    //std::cout << "APV: " << APVn << ", median: " << median << std::endl;
     itBaselineMap = baselinemap.find(APVn);
     if(itBaselineMap==baselinemap.end()){
       for(size_t strip=0; strip < 128; ++strip)  baselineDetSet.push_back(SiStripProcessedRawDigi(median));
@@ -247,10 +249,12 @@ void SiStripZeroSuppression::storeCMN(uint32_t id, const std::vector< std::pair<
 	apvNb++;
       }
     }
-
+    //@MJ@ TODO this was different
     if(fixCM&&apvf[vmedians[i].first]){
       apvDetSet.push_back(SiStripProcessedRawDigi(-999.));
-    }else{
+    }
+    else
+    {
       apvDetSet.push_back(SiStripProcessedRawDigi(vmedians[i].second));
     }
     apvNb++;

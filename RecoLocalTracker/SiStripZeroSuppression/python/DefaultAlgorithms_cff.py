@@ -1,14 +1,14 @@
 import FWCore.ParameterSet.Config as cms
 
 DefaultAlgorithms = cms.PSet(
-    doAPVRestore = cms.bool(True),
+    doAPVRestore = cms.bool(True), #@MJ@ TODO doAPVRestore is set in here!
     useCMMeanMap= cms.bool(False),
     ## Pedestal subtraction ----------------
     PedestalSubtractionFedMode = cms.bool(False),
 
     ## Baseline finder ---------------------
     ## Supported CMN modes: Median, Percentile, IteratedMedian, TT6, FastLinear
-    CommonModeNoiseSubtractionMode = cms.string('IteratedMedian'),     
+    CommonModeNoiseSubtractionMode = cms.string('Median'), #@MJ@ TODO IteratedMedian    
 
     #CutToAvoidSignal = cms.double(3.0), ## for TT6
     
@@ -31,13 +31,13 @@ DefaultAlgorithms = cms.PSet(
     nSaturatedStrip = cms.uint32(2),         # for BaselineAndSaturation inspect
 
     ## Supported restore modes: Flat, BaselineFollower, IterativeMedian
-    APVRestoreMode = cms.string("BaselineFollower"),
+    APVRestoreMode = cms.string("Flat"),     #@MJ@ TODO baseline follower
     nSigmaNoiseDerTh = cms.uint32(4),        # threshold for rejecting hit strips: nSigma * noise
     consecThreshold = cms.uint32(5),         # minimum length of flat region
     hitStripThreshold = cms.uint32(40),      # height above median when strip is definitely a hit
     nSmooth = cms.uint32(9),                 # for smoothing and local minimum determination (odd number)
     minStripsToFit = cms.uint32(4),          # minimum strips to try spline algo (otherwise default to median)
-    ApplyBaselineCleaner = cms.bool(True),
+    ApplyBaselineCleaner = cms.bool(False),
     CleaningSequence = cms.uint32(1),
     slopeX=cms.int32(3),
     slopeY=cms.int32(4),

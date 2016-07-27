@@ -35,7 +35,8 @@ void SiStripRawProcessingAlgorithms::initialize(const edm::EventSetup& es) {
 
 void SiStripRawProcessingAlgorithms::initialize(const edm::EventSetup& es, const edm::Event& e){
   this->initialize(es);
-  if(restorer.get()&&doAPVRestore&&useCMMeanMap) restorer->LoadMeanCMMap(e);
+  if(restorer.get()&&doAPVRestore&&useCMMeanMap) restorer->LoadMeanCMMap(e);//@MJ@ TODO
+  //if(restorer.get()&&useCMMeanMap) restorer->LoadMeanCMMap(e);
   
 }
 
@@ -62,10 +63,11 @@ int16_t SiStripRawProcessingAlgorithms::SuppressProcessedRawData(const uint32_t&
       std::vector<int16_t>  processedRawDigisPedSubtracted ;
       
       int16_t nAPVFlagged =0;
+      //std::cout << "do apvrestore is: " << doAPVRestore << std::endl;
       if( doAPVRestore ) processedRawDigisPedSubtracted.assign(processedRawDigis.begin(), processedRawDigis.end());
       subtractorCMN->subtract(id, firstAPV,  processedRawDigis);
       if( doAPVRestore ) nAPVFlagged = restorer->InspectAndRestore(id, firstAPV, processedRawDigisPedSubtracted, processedRawDigis, subtractorCMN->getAPVsCM() );
-      suppressor->suppress( processedRawDigis, firstAPV,  suppressedDigis ); 
+      suppressor->suppress( processedRawDigis, firstAPV,  suppressedDigis ); //@MJ@ TODO suppress
       return nAPVFlagged;
 }
 

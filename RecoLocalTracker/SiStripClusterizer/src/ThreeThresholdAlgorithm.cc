@@ -7,6 +7,9 @@
 
 #include "DataFormats/SiStripCluster/interface/SiStripClusterTools.h"
 
+
+#define EDM_ML_DEBUG
+
 ThreeThresholdAlgorithm::
 ThreeThresholdAlgorithm(float chan, float seed, float cluster, unsigned holes, unsigned bad, unsigned adj, std::string qL, 
 			bool removeApvShots, float minGoodCharge) 
@@ -20,10 +23,11 @@ inline
 void ThreeThresholdAlgorithm::
 clusterizeDetUnit_(const digiDetSet& digis, output_t::TSFastFiller& output) const {
   if(isModuleBad(digis.detId())) return;
-
+  
   auto const & det = findDetId( digis.detId());
   if (!det.valid()) return;
 
+   //std::cout << "running algo" << std::endl;
 #ifdef EDM_ML_DEBUG
   if(!isModuleUsable(digis.detId() )) 
     edm::LogWarning("ThreeThresholdAlgorithm") << " id " << digis.detId() << " not usable???" << std::endl;

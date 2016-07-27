@@ -7,6 +7,7 @@
 #include "DataFormats/Common/interface/DetSetVector.h"
 #include "DataFormats/SiStripDigi/interface/SiStripRawDigi.h"
 #include "CondFormats/SiStripObjects/interface/SiStripPedestals.h"
+#include "RecoLocalTracker/SiStripZeroSuppression/interface/MedianCMNSubtractor.h"
 #include <vector>
 
 class SiStripPedestalsSubtractor {
@@ -17,6 +18,7 @@ class SiStripPedestalsSubtractor {
   
   void subtract(const edm::DetSet<SiStripRawDigi>&, std::vector<int16_t>&);
   void subtract(const uint32_t&, const uint16_t &, std::vector<int16_t>&);
+  void subtract(const edm::DetSet<SiStripRawDigi>&, std::vector<int16_t>&, std::vector<int16_t>&, std::vector<int16_t>&);
   void init(const edm::EventSetup& );
   
  private:
@@ -28,6 +30,7 @@ class SiStripPedestalsSubtractor {
   bool fedmode_;
   
   template <class input_t> void subtract_(const uint32_t&,const uint16_t&, const input_t&, std::vector<int16_t>&);
+  template <class input_t> void subtract_(const uint32_t&,const uint16_t&, const input_t&, std::vector<int16_t>&, std::vector<int16_t>&, std::vector<int16_t>&);
   const int16_t& eval(const int16_t& in) { return in;}
   const uint16_t& eval(const SiStripRawDigi& in) { return in.adc();}
 

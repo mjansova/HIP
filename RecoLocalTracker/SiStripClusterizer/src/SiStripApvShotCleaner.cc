@@ -1,9 +1,10 @@
 #include "RecoLocalTracker/SiStripClusterizer/interface/SiStripApvShotCleaner.h"
 #include <algorithm>
+#include <iostream>
 #include <boost/foreach.hpp>
 
 //Uncomment the following #define to have print debug
-//#define DEBUGME
+#define DEBUGME
 
 SiStripApvShotCleaner::
 SiStripApvShotCleaner():
@@ -15,13 +16,18 @@ SiStripApvShotCleaner():
 
 bool SiStripApvShotCleaner::
 clean(const edm::DetSet<SiStripDigi>& in, edm::DetSet<SiStripDigi>::const_iterator& scan, edm::DetSet<SiStripDigi>::const_iterator& end){
+  //std::cout << "in cleaner" << std::endl;
   if(in.size()<64)
+  {
     return false;
+    //std::cout << "return false 1" << std::endl; 
+ }
   
   if(loop(in)){
     reset(scan,end);
     return true;
   }
+    //std::cout << "return false 2" << std::endl; 
   return false;
 }
 
@@ -46,7 +52,8 @@ loop(const edm::DetSet<SiStripDigi>& in){
     pFirstDigiOfApv[i] = std::lower_bound(in.begin(),in.end(),d);
 
     //if satisfied it means that the number of digis in the apv i-1 is above stripsForMedia -> apvShot
-    if(i>0 && pFirstDigiOfApv[i]-pFirstDigiOfApv[i-1]>stripsForMedian){
+    if(i>0 && pFirstDigiOfApv[i]-pFirstDigiOfApv[i-1]>stripsForMedian){ //@MJ@ TODO what is shot, why removed?
+      //std::cout << "shot" << std::endl;
       shots_=true;
       shotApv_[i-1]=true;
 #ifdef DEBUGME 
@@ -121,6 +128,7 @@ void SiStripApvShotCleaner::subtractCM(){
         std::stringstream ss;
 	ss << "case with strip64=0 --> detid= "<<cacheDetId<< "\n";
         edm::LogInfo("ApvShot") << ss.str();
+    //std::cout << "return at strips=0" << std::endl; 
 #endif
      return;
   }
@@ -129,14 +137,19 @@ void SiStripApvShotCleaner::subtractCM(){
   float CM = 0.5f*(apvDigis[stripsForMedian].adc()+apvDigis[stripsForMedian-1].adc());
   
   
-  if(CM<=0) 
+  if(CM<=0)
+  {
+    //std::cout << "return at CMN" << std::endl; 
     return;
+  }
 
   //Subtract the median
   size_t i=0;
   for(;i<stripsForMedian&&apvDigis[i].adc()>CM;++i){
+    //std::cout << "digibefore " << apvDigis[i].adc() << std::endl;
     uint16_t adc=apvDigis[i].adc()>253?apvDigis[i].adc():(uint16_t)(apvDigis[i].adc()-CM);
     apvDigis[i]=SiStripDigi(apvDigis[i].strip(),adc);
+    //std::cout << "digiafter " << apvDigis[i].adc() << std::endl;
   }
   apvDigis.resize(i);
 
