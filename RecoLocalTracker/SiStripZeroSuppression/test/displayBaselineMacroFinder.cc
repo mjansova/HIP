@@ -18,7 +18,7 @@
 #include "vector"
 #include "math.h"
 #include "map"
-#include "tdrstyle.C"
+
     
 using namespace std;
 
@@ -26,8 +26,8 @@ using namespace std;
 int main(int argc, char *argv[])
 {
 
-//gStyle->SetOptStat(0);    
-/*gStyle->SetCanvasColor(-1);
+gStyle->SetOptStat(0);    
+gStyle->SetCanvasColor(-1);
 gStyle->SetPadColor(-1);
 gStyle->SetFrameFillColor(-1);
 gStyle->SetHistFillColor(-1);
@@ -41,12 +41,9 @@ gStyle->SetFrameBorderSize(0);
 gStyle->SetLegendBorderSize(0);
 gStyle->SetStatBorderSize(0);
 gStyle->SetTitleBorderSize(0);
-*/
 
-    //setTDRStyle();
-    Modified_tdr_style();
-//gROOT->ForceStyle();
-    
+gROOT->ForceStyle();
+
     if(argc != 4)
     {
         cout << "incorrect number of coommand line parametres!" << endl;
@@ -81,24 +78,21 @@ gStyle->SetTitleBorderSize(0);
     
     TIter nextkey(gDirectory->GetListOfKeys());
     TKey *key;
-    TKey *key2;
-    uint32_t keyCount = 0;
 	int objcounter=1;
 	int histolimit =0;
-
-    /*while ((key2 = (TKey*)nextkey())) {
-        keyCount++;
-    }*/
-
-    cout << " nr of overshoots " << keyCount << endl;
-
     while ((key = (TKey*)nextkey())) {
-
-        if(false) 
-            cout << "nonsense" << endl;
+        bool isHIP = false;
+	TH1F* hcheck = (TH1F*)key->ReadObj();
+	TH1F* hc = (TH1F*) f->Get(dir[2]+"/"+key->ReadObj()->GetName());
+        for(uint32_t bxx=0; bxx<hc->GetNbinsX(); bxx++ )
+        {
+            if(hc->GetBinContent(bxx) > 0)
+                isHIP=true;
+        }
+        
       	//if(histolimit != limit-1)
-	//	histolimit++;
-          else
+		histolimit++;
+          if(isHIP)
           {
 	  TObject *obj = key->ReadObj();
       
@@ -108,7 +102,6 @@ gStyle->SetTitleBorderSize(0);
 	
 	std::cout << "Found object n: " << objcounter << " Name: " << obj->GetName() << " Title: " << obj->GetTitle()<< std::endl;
 	++objcounter;
-        continue;
 	//if (strstr(obj->GetTitle(),"470116592")!=NULL)
 	//  continue;
 
@@ -127,47 +120,15 @@ gStyle->SetTitleBorderSize(0);
 	
 	if(hd!=0){
 
-          for(uint32_t rh=0; rh<hd->GetNbinsX(); rh++ )
-          {
-            vector<float> rms;
-            if(rh == 0 || rh%128==0)
-            {
-                for(uint32_t a = 0; a<128; a++ )
-                {
-                    rms.push_back(hd->GetBinContent(rh+1+a));
-                }
-                std::sort(rms.begin(), rms.end());
-                float sum = 0;
-                float av = 0;
-                float RMSstrips = rms.size()-26; //20%
-                for(uint32_t r=0; r<RMSstrips; r++)
-                {
-                    sum +=rms.at(r);
-                }
-                av = sum/RMSstrips;
-
-                float rmsSum =0;
-                float rmsRes =0;
-                for(uint32_t v=0; v<RMSstrips; v++)
-                {
-                    rmsSum += pow(rms.at(v)-av,2);
-                }
-
-                rmsRes = sqrt(rmsSum/RMSstrips);
-                cout << "rms " << rmsRes << endl;
-            }
-          }
           hd->SetTitle("");
 	  hd->SetXTitle("strip");
           hd->SetYTitle("charge [ADC]");
 	  hd->SetLineWidth(2);
+	  hd->SetMaximum(1500);
+	  hd->SetMinimum(-200);
 	  //hd->SetLineStyle(2);
 	  hd->SetLineColor(6);
-	  hd->SetMinimum(-300);
-	  hd->SetMaximum(1000);
-	  hd->GetYaxis()->SetTitleOffset(1.7);
 	  leg.AddEntry(hd,"Raw digis              ","l");
-    //Modified_tdr_style();
 	  hd->Draw("hist p l");
 	}
 
@@ -176,8 +137,8 @@ gStyle->SetTitleBorderSize(0);
         //h->Add(hoff);
 	h->SetLineWidth(2);
         h->SetTitle("");
-	h->SetXTitle("strip");
-	h->SetYTitle("charge [ADC]");
+	h->SetXTitle("StripNumber");
+	h->SetYTitle("Charge (ADC counts)");
 	leg.AddEntry(h,"Pedestal subtracted digis","l");
 	h->Draw("hist p l same");
         }
@@ -192,12 +153,6 @@ gStyle->SetTitleBorderSize(0);
 	if(hb!=0 && layers >2){
 
           //hb->Add(hoff);
-          for(uint32_t bl=0; bl<hb->GetNbinsX(); bl++ )
-          {
-            if(bl == 0 || bl%128==0)
-                cout << "baseline " << hb->GetBinContent(bl+1) << endl;
-          }
-          
 	  hb->SetLineWidth(2);
 	  hb->SetLineStyle(2);
 	  hb->SetLineColor(2);
@@ -208,7 +163,6 @@ gStyle->SetTitleBorderSize(0);
 	
 	f->cd();
 	//f->cd(dir[1]);
-	TH1F* hc = (TH1F*) f->Get(dir[2]+"/"+obj->GetName());
 	
 	if(hc!=0 && layers>3){
 
@@ -233,13 +187,14 @@ gStyle->SetTitleBorderSize(0);
       leg.Draw();
     
 	
-	//C->Update();
+	C->Update();
 //	fo->cd();
 //        C->Write();
-	C->SaveAs(TString("event"+slimit+"_layer"+slayers+".eps"));
-	C->SaveAs(TString("event"+slimit+"_layer"+slayers+".root"));
+	
+	C->SaveAs(TString("event"+to_string(histolimit)+"_layer"+slayers+".eps"));
+	C->SaveAs(TString("event"+to_string(histolimit)+"_layer"+slayers+".root"));
 
-       break;	
+       //break;	
 	
       }
     }  

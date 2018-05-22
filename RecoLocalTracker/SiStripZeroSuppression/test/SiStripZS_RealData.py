@@ -32,15 +32,24 @@ process.configurationMetadata = cms.untracked.PSet(
     name = cms.untracked.string('PyReleaseValidation')
 )
 process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(3)
+    input = cms.untracked.int32(200)
 )
 
 # Input source
 process.source = cms.Source("PoolSource",
     fileNames = cms.untracked.vstring(
+    #'file:/opt/sbg/cms/ui6_data1/mjansova/VRpp2509/122ACFA9-D582-E611-A16F-FA163ED18503.root',
+    'root://cms-xrd-global.cern.ch//store/data/Run2016H/VRZeroBias0/RAW/v1/000/281/604/00000/0452936A-D282-E611-9B80-02163E011846.root',
+    'root://cms-xrd-global.cern.ch//store/data/Run2016H/VRZeroBias0/RAW/v1/000/281/604/00000/048A27BE-EE82-E611-9D05-02163E0141FD.root',
+    'root://cms-xrd-global.cern.ch//store/data/Run2016H/VRZeroBias0/RAW/v1/000/281/604/00000/069E136A-D282-E611-9641-02163E011A03.root',
+    'root://cms-xrd-global.cern.ch//store/data/Run2016H/VRZeroBias0/RAW/v1/000/281/604/00000/18662DB4-EE82-E611-8974-FA163EE66074.root',
+    'root://cms-xrd-global.cern.ch//store/data/Run2016H/VRZeroBias0/RAW/v1/000/281/604/00000/22F32D6B-D282-E611-B4B7-FA163ECC6863.root',
+    'root://cms-xrd-global.cern.ch//store/data/Run2016H/VRZeroBias3/RAW/v1/000/281/604/00000/0C42AF79-D282-E611-9C19-02163E0139D2.root',
+    'root://cms-xrd-global.cern.ch//store/data/Run2016H/VRZeroBias3/RAW/v1/000/281/604/00000/0CF60DFD-D282-E611-A32F-02163E0134E9.root',
+    'root://cms-xrd-global.cern.ch//store/data/Run2016H/VRZeroBias3/RAW/v1/000/281/604/00000/18645178-D682-E611-A719-FA163E65C584.root',
     #'file:/data/abaty/VirginRaw_CentralitySkims/VirginRAW_2010_HICorePhysics_SKIM_Cent_0_5_1.root',
     #'file:/opt/sbg/cms/ui6_data1/mjansova/RD2/streamerToRAWVR.root'
-    'file:/opt/sbg/cms/ui6_data1/mjansova/VRpp/082F80A7-2818-E611-92E0-02163E01338D.root',
+    #'file:/opt/sbg/cms/ui6_data1/mjansova/VRpp/082F80A7-2818-E611-92E0-02163E01338D.root',
     #'file:/opt/sbg/cms/ui6_data1/mjansova/VRpp2509/122ACFA9-D582-E611-A16F-FA163ED18503.root',
     #'root://cms-xrd-global.cern.ch//store/data/Run2016B/VRZeroBias5/RAW/v2/000/273/162/00000/30ACD44B-1718-E611-8E70-02163E013392.root', #secon version
     #'file:/data/abaty/VirginRaw_CentralitySkims/VirginRAW_2010_HICorePhysics_SKIM_Cent_0_5_10.root',
@@ -66,8 +75,8 @@ process.RECOoutput = cms.OutputModule("PoolOutputModule",
 
 
 process.load('Configuration/StandardSequences/FrontierConditions_GlobalTag_cff')
-process.GlobalTag.globaltag = '80X_dataRun2_HLT_v12'
-
+#process.GlobalTag.globaltag = '80X_dataRun2_HLT_v12'
+process.GlobalTag.globaltag = '80X_dataRun2_Prompt_v9'
 ## Offline Silicon Tracker Zero Suppression
 from RecoLocalTracker.SiStripZeroSuppression.DefaultAlgorithms_cff import *
 process.siStripZeroSuppression.Algorithms.PedestalSubtractionFedMode = cms.bool(False) #what FED does
@@ -80,7 +89,7 @@ process.siStripZeroSuppression.storeInZScollBadAPV = cms.bool(True)
 
 
 process.TFileService = cms.Service("TFileService",
-        fileName=cms.string("BaselinesForVisualisation.root"))
+        fileName=cms.string("betterGT.root"))
 
 process.baselineAna = cms.EDAnalyzer("SiStripBaselineAnalyzer",
         Algorithms = DefaultAlgorithms,
@@ -89,8 +98,8 @@ process.baselineAna = cms.EDAnalyzer("SiStripBaselineAnalyzer",
         srcAPVCM  =  cms.InputTag('siStripZeroSuppression','APVCMVirginRaw'),
         #srcProcessedRawDigi =  cms.InputTag('siStripZeroSuppression','VirginRaw'),
         srcProcessedRawDigi =  cms.InputTag('siStripDigis','VirginRaw'),
-        #srcZSdigi = cms.InputTag('siStripZeroSuppression','VirginRaw'),
-        srcZSdigi = cms.InputTag('siStripZeroSuppression','ZeroSuppressedNBandTVirginRaw'), #@MJ@ TODO new ZS -exchanged!!!
+        srcZSdigi = cms.InputTag('siStripZeroSuppression','VirginRaw'),
+        #srcZSdigi = cms.InputTag('siStripZeroSuppression','ZeroSuppressedNBandTVirginRaw'), #@MJ@ TODO new ZS -exchanged!!!
         nModuletoDisplay = cms.uint32(3000000),
         hitStripThreshold = cms.uint32(40), #taken from default algorithms
         plotClusters = cms.bool(True),

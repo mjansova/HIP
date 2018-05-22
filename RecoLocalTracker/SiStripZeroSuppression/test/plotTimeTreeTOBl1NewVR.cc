@@ -38,10 +38,11 @@ using namespace std;
 int main(int argc, char *argv[])
 {
 
-       if(argc != 2)
+       if(argc != 3)
         throw std::runtime_error("Bad number of arguments!");
 
     TString inputFle = argv[1];
+    TString inputTrackingFle = argv[2];
 
     ofstream myfile;
     myfile.open ("plot_log.txt");
@@ -53,6 +54,13 @@ int main(int argc, char *argv[])
     TFile *f = new TFile(inputFle);
     // baselineAna
     TTree *t1 = dynamic_cast<TTree*>(f->Get("sEventTree"));
+
+    TFile *ft = new TFile(inputTrackingFle);
+    TProfile *pTracking = dynamic_cast<TProfile*>(ft->Get("hitsinmodules")->Clone());
+
+    TAxis *xaxis = NULL;
+    xaxis = pTracking->GetXaxis();
+
 
     unsigned int  moduleKeyOUT = NULL;
     unsigned int  moduleValueOUT = NULL;
@@ -203,6 +211,11 @@ int main(int argc, char *argv[])
      HIPf->GetYaxis()->SetTitle("fraction");
      HIPf->GetXaxis()->SetTitle("module");
 
+     TH1F* HIPp =  new TH1F("p_HIP", "p_HIP", 15000, 0, 15000);
+     HIPp->SetTitle("");
+     HIPp->GetYaxis()->SetTitle("HIP probability");
+     HIPp->GetXaxis()->SetTitle("module");
+
      TH1F* ChHIPPerMod =  new TH1F("ChHIPPerMod", "ChHIPPerMod", 15000, 0, 15000);
      ChHIPPerMod->SetTitle("");
      ChHIPPerMod->GetYaxis()->SetTitle("mean cluster charge for HIP");
@@ -223,6 +236,31 @@ int main(int argc, char *argv[])
      ChFakePerMod->SetTitle("");
      ChFakePerMod->GetYaxis()->SetTitle("mean cluster charge for other than collision event");
      ChFakePerMod->GetXaxis()->SetTitle("module");
+
+
+
+     TH1F* ChDistHIPPerMod =  new TH1F("ChDistHIPPerMod", "ChDistHIPPerMod", 15000, 0, 15000);
+     ChDistHIPPerMod->SetTitle("");
+     ChDistHIPPerMod->GetXaxis()->SetTitle("cluster charge for HIP");
+     //ChDistHIPPerMod->GetXaxis()->SetTitle("module");
+
+     TH1F* ChDistPOSTPerMod =  new TH1F("ChDistPOSTPerMod", "ChDistPOSTPerMod", 15000, 0, 15000);
+     ChDistPOSTPerMod->SetTitle("");
+     ChDistPOSTPerMod->GetXaxis()->SetTitle("cluster charge after HIP");
+     //ChDistPOSTPerMod->GetXaxis()->SetTitle("module");
+
+     TH1F* ChDistCollPerMod =  new TH1F("ChDistCollPerMod", "ChDistCollPerMod", 15000, 0, 15000);
+     ChDistCollPerMod->SetTitle("");
+     ChDistCollPerMod->GetXaxis()->SetTitle("cluster charge for collision event");
+     //ChDistCollPerMod->GetXaxis()->SetTitle("module");
+
+
+     TH1F* ChDistFakePerMod =  new TH1F("ChDistFakePerMod", "ChDistFakePerMod", 15000, 0, 15000);
+     ChDistFakePerMod->SetTitle("");
+     ChDistFakePerMod->GetXaxis()->SetTitle("cluster charge for other than collision event");
+     //ChDistFakePerMod->GetXaxis()->SetTitle("module");
+
+
 
      TH1F* MultHIPPerMod =  new TH1F("MultHIPPerMod", "MultHIPPerMod", 15000, 0, 15000);
      MultHIPPerMod->SetTitle("");
@@ -304,7 +342,16 @@ int main(int argc, char *argv[])
      PbaselineVsRMSall ->GetXaxis()->SetTitle("baseline[ADC]");
      PbaselineVsRMSall ->GetYaxis()->SetTitle("RMS of raw digis");
 
-     vector<TH2F*>baselineVsRMSallPerMod;
+
+
+     TProfile* PbaselineVsRMSallColl = new TProfile("PbaselineVsRMSallColl", "PbaselineVsRMSallColl", 700, -200, 500, "S" );
+     PbaselineVsRMSallColl ->SetTitle("");
+     PbaselineVsRMSallColl ->GetXaxis()->SetTitle("baseline[ADC]");
+     PbaselineVsRMSallColl ->GetYaxis()->SetTitle("RMS of raw digis");
+
+
+     vector<TH2F*> baselineVsRMSallPerMod;
+     vector<TProfile*> PbaselineVsRMSallPerMod;
 
      TH2F* baselineVsRMSPRE = new TH2F("baselineVsRMSPRE", "baselineVsRMSPRE", 700, -200, 500, 200  , 0, 50 );
      TProfile* PbaselineVsRMSPRE = new TProfile("PbaselineVsRMSPRE", "PbaselineVsRMSPRE", 700, -200, 500, "S");
@@ -470,6 +517,7 @@ int main(int argc, char *argv[])
      TProfile* PRMSvsCMULTPRE = new TProfile("PRMSvsMULTPRE", "PRMSvsMULTPRE", 200, 0, 50, "S" );
      TProfile* PRMSvsCMULTHIP = new TProfile("PRMSvsMULTHIP", "PRMSvsMULTHIP", 200, 0, 50, "S" );
      TProfile* PRMSvsCMULTPOST = new TProfile("PRMSvsMULTPOST", "PRMSvsMULTPOST", 200, 0, 50, "S" );
+       
      TProfile* PRMSvsSTPRE = new TProfile("PRMSvsSTPRE", "PRMSvsSTPRE", 200, 0, 50, "S" );
      TProfile* PRMSvsSTHIP = new TProfile("PRMSvsSTHIP", "PRMSvsSTHIP", 200, 0, 50, "S" );
      TProfile* PRMSvsSTPOST = new TProfile("PRMSvsSTPOST", "PRMSvsSTPOST", 200, 0, 50, "S" );
@@ -562,10 +610,11 @@ int main(int argc, char *argv[])
      TH1F* chargeOtherBX = new TH1F("chargeOtherBX", "chargeOtherBX", 5000, 0, 10000);
      TH1F* slopeForAll = new TH1F("slopeForAll", "slopeForAll", 1000, -1, 1);
 
-     TH1F* whichBXIsHIP =  new TH1F("whichBXIsHIP", "whichBXIsHIP", 3, 0, 3);
+     TH1F* whichBXIsHIP =  new TH1F("whichBXIsHIP", "whichBXIsHIP", 30, 2300, 2330);
      whichBXIsHIP->SetTitle("");
      whichBXIsHIP->GetYaxis()->SetTitle("nr of HIP events");
      whichBXIsHIP->GetXaxis()->SetTitle("bx");
+
      TProfile* multProfAll = new TProfile(" multProfAll", " multProfAll", lTrain, bTrain, eTrain);
      multProfAll->SetTitle("");
      multProfAll->GetYaxis()->SetTitle("cluster multiplicity");
@@ -574,6 +623,69 @@ int main(int argc, char *argv[])
      multProfAllHIP->SetTitle("");
      multProfAllHIP->GetYaxis()->SetTitle("cluster multiplicity");
      multProfAllHIP->GetXaxis()->SetTitle("bx");
+
+
+     TH2F* RMSvsBLafHIP = new TH2F("RMSvsBLafHIP", "RMSvsBLafHIP", 200, 0, 100, 600  , -300, 300 );
+     TProfile* PRMSvsBLafHIP = new TProfile("PRMSvsBLafHIP", "PRMSvsBLafHIP", 200, 0, 100);
+     TH2F* RMSvsBLaf = new TH2F("RMSvsBLaf", "RMSvsBLaf", 200, 0, 100, 600  , -300, 300 );
+     TProfile* PRMSvsBLaf = new TProfile("PRMSvsBLaf", "PRMSvsBLaf", 200, 0, 100);
+
+
+     TH2F* RMSvsMULTafHIP = new TH2F("RMSvsMULTafHIP", "RMSvsMULTafHIP", 200, 0, 100, 50000  , 0, 5 );
+     TProfile* PRMSvsMULTafHIP = new TProfile("PRMSvsMULTafHIP", "PRMSvsMULTafHIP", 200, 0, 100);
+     TH2F* RMSvsMULTaf = new TH2F("RMSvsMULTaf", "RMSvsMULTaf", 200, 0, 100, 50000  , 0, 5 );
+     TProfile* PRMSvsMULTaf = new TProfile("PRMSvsMULTaf", "PRMSvsMULTaf", 200, 0, 100);
+
+     TH2F* RMSvsWIafHIP = new TH2F("RMSvsWIafHIP", "RMSvsWIafHIP", 200, 0, 100, 50  , 0, 50 );
+     TProfile* PRMSvsWIafHIP = new TProfile("PRMSvsWIafHIP", "PRMSvsWIafHIP", 200, 0, 100);
+     TH2F* RMSvsWIaf = new TH2F("RMSvsWIaf", "RMSvsWIaf", 200, 0, 100, 50  , 0, 50 );
+     TProfile* PRMSvsWIaf = new TProfile("PRMSvsWIaf", "PRMSvsWIaf", 200, 0, 100);
+
+     TH2F* BLvsMULTafHIP = new TH2F("BLvsMULTafHIP", "BLvsMULTafHIP", 300, -300, 300, 50000  , 0, 5 );
+     TProfile* PBLvsMULTafHIP = new TProfile("PBLvsMULTafHIP", "PBLvsMULTafHIP", 300, -300, 300);
+     TH2F* BLvsMULTaf = new TH2F("BLvsMULTaf", "BLvsMULTaf", 300, -300, 300, 50000  , 0, 5 );
+     TProfile* PBLvsMULTaf = new TProfile("PBLvsMULTaf", "PBLvsMULTaf", 300, -300, 300);
+
+     TH2F* BLvsRMSafHIP = new TH2F("BLvsRMSafHIP", "BLvsRMSafHIP", 300  , -300, 300 , 200, 0, 100);
+     TProfile* PBLvsRMSafHIP = new TProfile("PBLvsRMSafHIP", "PBLvsRMSafHIP", 300, -300, 300);
+     TH2F* BLvsRMSaf = new TH2F("BLvsRMSaf", "BLvsRMSaf", 300  , -300, 300 , 200, 0, 100);
+     TProfile* PBLvsRMSaf = new TProfile("PBLvsRMSaf", "PBLvsRMSaf", 300, -300, 300);
+
+     TH2F* BLvsMULTafNORMAL = new TH2F("BLvsMULTafNORMAL", "BLvsMULTafNORMAL", 300, -300, 300, 50000  , 0, 5 );
+     TProfile* PBLvsMULTafNORMAL = new TProfile("PBLvsMULTafNORMAL", "PBLvsMULTafNORMAL", 300, -300, 300);
+
+     TH2F* BLvsRMSafNORMAL = new TH2F("BLvsRMSafNORMAL", "BLvsRMSafNORMAL", 300  , -300, 300 , 200, 0, 100);
+     TProfile* PBLvsRMSafNORMAL = new TProfile("PBLvsRMSafNORMAL", "PBLvsRMSafNORMAL", 300, -300, 300);
+
+
+     TH2F* RMSvsSLafHIP = new TH2F("RMSvsSLafHIP", "RMSvsSLafHIP", 200, 0, 100, 401  , -1, 1 );
+     TProfile* PRMSvsSLafHIP = new TProfile("PRMSvsSLafHIP", "PRMSvsSLafHIP", 200, 0, 100);
+     TH2F* RMSvsSLaf = new TH2F("RMSvsSLaf", "RMSvsSLaf", 200, 0, 100, 401  ,-1 , 1 );
+     TProfile* PRMSvsSLaf = new TProfile("PRMSvsSLaf", "PRMSvsSLaf", 200, 0, 100);
+
+     TH2F* BLvsSLafHIP = new TH2F("BLvsSLafHIP", "BLvsSLafHIP", 300  , -300, 300 , 401, -1, 1);
+     TProfile* PBLvsSLafHIP = new TProfile("PBLvsSLafHIP", "PBLvsSLafHIP", 300, -300, 300);
+     TH2F* BLvsSLaf = new TH2F("BLvsSLaf", "BLvsSLaf", 300  , -300, 300 , 401, -1, 1);
+     TProfile* PBLvsSLaf = new TProfile("PBLvsSLaf", "PBLvsSLaf", 300, -300, 300);
+
+    
+
+     TH1F* RMSaf =  new TH1F("RMSaf", "RMSaf", 200, 0, 50);
+     RMSaf->SetTitle("");
+     RMSaf->GetXaxis()->SetTitle("RMS spread [ADC]");
+     RMSaf->GetYaxis()->SetTitle("counts");
+
+     TH1F* BLaf =  new TH1F("BLaf", "BLaf", 700, -200, 500);
+     BLaf->SetTitle("");
+     BLaf->GetXaxis()->SetTitle("baseline [ADC]");
+     BLaf->GetYaxis()->SetTitle("counts");
+
+
+     TH1F* SLaf =  new TH1F("SLaf", "SLaf", 401, -1, 1);
+     SLaf->SetTitle("");
+     SLaf->GetXaxis()->SetTitle("slope");
+     SLaf->GetYaxis()->SetTitle("counts");
+
 
     /////////////////
     ULong64_t previousBC = 0;
@@ -648,12 +760,15 @@ int main(int argc, char *argv[])
          {
              satBlPerMod.push_back(new TH1F(modName + "_bl", modName + "_bl", 200, -200, 0));
              baselineVsRMSallPerMod.push_back(new TH2F("baselineVsRMS_" + modName, "baselineVsRMS_" + modName, 700, -200, 500, 200  , 0, 50 ));
+             PbaselineVsRMSallPerMod.push_back(new TProfile("PbaselineVsRMS_" + modName, "PbaselineVsRMS_" + modName, 700, -200, 500 ));
              satBlPerMod.at(m)->SetTitle(""); //TODO module Key
              satBlPerMod.at(m)->GetYaxis()->SetTitle("count");
              satBlPerMod.at(m)->GetXaxis()->SetTitle("baseline [ADC]");
              baselineVsRMSallPerMod.at(m)->SetTitle(""); //TODO module Key
              baselineVsRMSallPerMod.at(m)->GetYaxis()->SetTitle("RMS");
              baselineVsRMSallPerMod.at(m)->GetXaxis()->SetTitle("baseline [ADC]");
+             PbaselineVsRMSallPerMod.at(m)->GetXaxis()->SetTitle("baseline [ADC]");
+             PbaselineVsRMSallPerMod.at(m)->GetYaxis()->SetTitle("RMS");
          }
 
         uint32_t satStrip = 0;
@@ -662,6 +777,37 @@ int main(int argc, char *argv[])
          //    break;
 
          t1->GetEntry(m);
+
+         /*vector<unsigned int> moduleKeys;
+         moduleKeys.push_back(369125670);
+         moduleKeys.push_back(369141286);
+         moduleKeys.push_back(369141862);
+         moduleKeys.push_back(402672909);
+         moduleKeys.push_back(470131080);
+         moduleKeys.push_back(470131080);
+         moduleKeys.push_back(470373038);
+         moduleKeys.push_back(470393674);
+         moduleKeys.push_back(470393674);
+         for(uint32_t ke = 0; ke<moduleKeys.size(); ke++)
+         {
+             cout << "module " << moduleKeys.at(ke) << " partition  " <<  int((moduleKeys.at(ke)>>25)&0x7) << " layer " <<  int((moduleKeys.at(ke)>>14)&0x7) << endl;
+         }
+*/
+
+         if( moduleKeyOUT == 369125670 ||
+             moduleKeyOUT == 369141286 ||
+             moduleKeyOUT == 369141862 ||
+             moduleKeyOUT == 402672909 ||
+             moduleKeyOUT == 470131080 ||
+             moduleKeyOUT == 470147528 ||
+             moduleKeyOUT == 470373038 ||
+             moduleKeyOUT == 470393674 ||
+             moduleKeyOUT == 470393674 
+           )
+           {
+               //throw std::runtime_error("modul indeed found");
+               continue;
+           }
 
                 //cout << "hereii " << endl;
 
@@ -675,7 +821,7 @@ int main(int argc, char *argv[])
              //    min = baselinesMtxOUT->at(l).at(2);
              //}
          //}
-
+         uint16_t APVsize =0;
          uint32_t bunch = 0;
          for(uint32_t i=0; i< eventNrsOUT->size(); i++)
          {
@@ -835,8 +981,10 @@ int main(int argc, char *argv[])
 
                 baselineVsRMSall->Fill(baselines.at(b), baselineRMSMtxOUT->at(i).at(b));
                 PbaselineVsRMSall->Fill(baselines.at(b), baselineRMSMtxOUT->at(i).at(b));
-                if(m<5)
-                    baselineVsRMSallPerMod.at(m)->Fill(baselines.at(b), baselineRMSMtxOUT->at(i).at(b));
+
+                if( bunchNrsOUT->at(i)==2306)
+                     PbaselineVsRMSallColl->Fill(baselines.at(b), baselineRMSMtxOUT->at(i).at(b));
+
                 RMSall->Fill( baselineRMSMtxOUT->at(i).at(b));
                 graph2->SetPoint(i, bunch, baselines.at(b));//+b*10);
                 if(maxCStrips <3)
@@ -860,7 +1008,8 @@ int main(int argc, char *argv[])
                 //cout << "here4 " << endl;
                     if(HIP==true && bunchNrsOUT->at(i)<2324 )
                     {
-                        whichBXIsHIP->Fill(2.5);
+                        //cout << " in whichBXIsHIP 1 " << endl;
+                        //cout << " in whichBXIsHIP 1.2 " << endl;
                         goto next;
                     }
                     else if(HIP==true)
@@ -868,11 +1017,14 @@ int main(int argc, char *argv[])
                         //throw std::runtime_error("this cannot be true");
                         goto next2;
                     }
+                    cout << " in whichBXIsHIP 2 " << endl;
+                    whichBXIsHIP->Fill(bunchNrsOUT->at(i));
+                    cout << " in whichBXIsHIP 2.2 " << endl;
                     ofHIP++;
                     HIPnr++;
                     HIP = true;
                     HIPpoint = 1;
-                    evfile << moduleKeyOUT << " " << eventNrsOUT->at(i) << " " << "HIP" << " " << HIPnr << " BUNCH " <<  bunchNrsOUT->at(i)<<endl;  //I need to save module ID!!!!
+                    evfile << moduleKeyOUT << " " << eventNrsOUT->at(i) << " " << "HIP" << " " << HIPnr << " BUNCH " <<  bunchNrsOUT->at(i) << " RMS " << baselineRMSMtxOUT->at(i).at(b) << " BASELINE " << baselines.at(b) <<  endl;  //I need to save module ID!!!!
                     prevBunch = bunch;           
                     oneHIP = TH1F("baseline after HIP", "baseline after HIP", lTrain, bTrain ,eTrain);
                     clusCH = TH1F("clusCH", "clusCH", lTrain, bTrain ,eTrain);
@@ -896,10 +1048,10 @@ int main(int argc, char *argv[])
                     PBXvsRMSbot->Fill(bunchNrsOUT->at(i), (RMSbot.at(b)) );
                     baseline2D->Fill(bunchNrsOUT->at(i), baselines.at(b));
                     baselineP->Fill(bunchNrsOUT->at(i), baselines.at(b));
-                    if(bunchNrsOUT->at(i) == 2306)
+                    /*if(bunchNrsOUT->at(i) == 2306)
                         whichBXIsHIP->Fill(0.5);
                     else
-                        whichBXIsHIP->Fill(1.5);
+                        whichBXIsHIP->Fill(1.5);*/
 
                     if(m<5)
                         satBlPerMod.at(m)->Fill(baselines.at(b));
@@ -954,6 +1106,8 @@ int main(int argc, char *argv[])
                           BXvsWI->Fill(bunchNrsOUT->at(i), strp);
                           PBXvsWI->Fill(bunchNrsOUT->at(i), strp);
                           mPBXvsWI->Fill(bunchNrsOUT->at(i), strp);
+                          
+                          ChDistHIPPerMod->Fill(clusterADC.at(counter));
                           //if(bunchNrsOUT->at(i) > 334)
                           //{
                           //    cleanedBXvsCH2->Fill((Double_t)0 , clusterADC.at(counter));
@@ -1124,7 +1278,7 @@ int main(int argc, char *argv[])
                 //cout << "here6 " << endl;
                     if(i>0 && bunchNrsOUT->at(i)-bunchNrsOUT->at(i-1) > 0 && bunchNrsOUT->at(i)-bunchNrsOUT->at(i-1) < lTrain)
                     {
-                        evfile << moduleKeyOUT << " " << eventNrsOUT->at(i-1) << " " << "PRE" << " " << HIPnr << " BUNCH " <<  bunchNrsOUT->at(i-1) << endl;  //I need to save module ID!!!!
+                        evfile << moduleKeyOUT << " " << eventNrsOUT->at(i-1) << " " << "PRE" << " " << HIPnr << " BUNCH " <<  bunchNrsOUT->at(i-1)<< " RMS " << baselineRMSMtxOUT->at(i-1).at(b) << " BASELINE " << baselinesMtxOUT->at(i-1).at(b)  << endl;  //I need to save module ID!!!!
                         oneHIP.SetBinContent(bunchNrsOUT->at(i-1)-(bTrain-1), baselinesMtxOUT->at(i-1).at(b));
                         //myfile << "previous point" << endl;
                         uint32_t counterBef = 0;
@@ -1191,6 +1345,7 @@ int main(int argc, char *argv[])
                                 BXvsCH2->Fill((Double_t)bunchNrsOUT->at(i-1) , chargeOfClustersMtxOUT->at(i-1).at(counterBef));
                                 PBXvsCH2->Fill((Double_t)bunchNrsOUT->at(i-1) , chargeOfClustersMtxOUT->at(i-1).at(counterBef));
                                 mPBXvsCH2->Fill((Double_t)bunchNrsOUT->at(i-1) , chargeOfClustersMtxOUT->at(i-1).at(counterBef));
+                                //ChDistHIPPerMod->Fill(clusterADC.at(counter));
                                if(bunchNrsOUT->at(i-1) > 334)
                                {
                                      cleanedBXvsCH2->Fill((Double_t)bunchNrsOUT->at(i-1) , chargeOfClustersMtxOUT->at(i-1).at(counterBef));
@@ -1456,6 +1611,7 @@ int main(int argc, char *argv[])
                           BXvsCH2->Fill(bunchNrsOUT->at(i) , clusterADC.at(counter));
                           PBXvsCH2->Fill(bunchNrsOUT->at(i) , clusterADC.at(counter));
                           mPBXvsCH2->Fill(bunchNrsOUT->at(i) , clusterADC.at(counter));
+                          ChDistPOSTPerMod->Fill(clusterADC.at(counter));
                           if(strpAf>10) 
                           {
                               xlargeClusPerMod->Fill(bunchNrsOUT->at(i));
@@ -1499,9 +1655,40 @@ int main(int argc, char *argv[])
                     MultPOSTCount++;
                     multProfAllHIP->Fill(bunchNrsOUT->at(i), multAf);
                     mmultProfAllHIP->Fill(bunchNrsOUT->at(i), multAf);
+                       if(bunchNrsOUT->at(i) != 2306)
+                       {
+                if(m<5)
+                {
+                    baselineVsRMSallPerMod.at(m)->Fill(baselines.at(b), baselineRMSMtxOUT->at(i).at(b));
+                    PbaselineVsRMSallPerMod.at(m)->Fill(baselines.at(b), baselineRMSMtxOUT->at(i).at(b));
+                }
+                           RMSvsBLafHIP->Fill(baselineRMSMtxOUT->at(i).at(b), baselinesMtxOUT->at(i).at(b) );
+                           PRMSvsBLafHIP->Fill(baselineRMSMtxOUT->at(i).at(b), baselinesMtxOUT->at(i).at(b) );
+                           
+                           if(bunchNrsOUT->at(i) < 2314)
+                           {
+                           BLvsRMSafHIP->Fill( baselinesMtxOUT->at(i).at(b),baselineRMSMtxOUT->at(i).at(b) );
+                           PBLvsRMSafHIP->Fill( baselinesMtxOUT->at(i).at(b),baselineRMSMtxOUT->at(i).at(b) );
+                           }
+                           RMSvsMULTafHIP->Fill(baselineRMSMtxOUT->at(i).at(b), multAf);
+                           PRMSvsMULTafHIP->Fill(baselineRMSMtxOUT->at(i).at(b), multAf);
+                           if( strpAf != 0)
+                           {
+                           RMSvsWIafHIP->Fill( baselineRMSMtxOUT->at(i).at(b), strpAf );
+                           PRMSvsWIafHIP->Fill( baselineRMSMtxOUT->at(i).at(b), strpAf );
+                           }
+                           BLvsMULTafHIP->Fill(baselinesMtxOUT->at(i).at(b),  multAf );
+                           PBLvsMULTafHIP->Fill(baselinesMtxOUT->at(i).at(b),  multAf );
+                           RMSvsSLafHIP->Fill( baselineRMSMtxOUT->at(i).at(b),PSSlope20MtxOUT->at(i).at(b)  );
+                           PRMSvsSLafHIP->Fill( baselineRMSMtxOUT->at(i).at(b),PSSlope20MtxOUT->at(i).at(b)  );
+                           BLvsSLafHIP->Fill( baselinesMtxOUT->at(i).at(b), PSSlope20MtxOUT->at(i).at(b));
+                           PBLvsSLafHIP->Fill( baselinesMtxOUT->at(i).at(b), PSSlope20MtxOUT->at(i).at(b));
+
+                       }
+                    //@MJ@ TODO, here RMS and mult and baseline after
                     if(multAf>0)
                     {
-                        evfile << moduleKeyOUT << " " << eventNrsOUT->at(i) << " " << "POST" << " " << HIPnr << " BUNCH " <<  bunchNrsOUT->at(i) << endl;  //I need to save module ID!!!!
+                        evfile << moduleKeyOUT << " " << eventNrsOUT->at(i) << " " << "POST" << " " << HIPnr << " BUNCH " <<  bunchNrsOUT->at(i)<< " RMS " << baselineRMSMtxOUT->at(i).at(b) << " BASELINE " << baselinesMtxOUT->at(i).at(b) << endl;  //I need to save module ID!!!!
                     }
                 //cout << "here9.4 " << endl;
                     if(maxchrgAf>0)
@@ -1667,6 +1854,8 @@ int main(int argc, char *argv[])
                                         largeClusPerModCOLL->Fill(moduleValueOUT);
                                     }
                                         nlargeClusPerModCOLL->Fill(moduleValueOUT);
+                          
+                                    ChDistCollPerMod->Fill(clusterADC.at(counterDist));
                                 }
                                 else
                                 {
@@ -1679,6 +1868,7 @@ int main(int argc, char *argv[])
                                         largeClusPerModFAKE->Fill(moduleValueOUT);
                                     }
                                         nlargeClusPerModFAKE->Fill(moduleValueOUT);
+                                    ChDistFakePerMod->Fill(clusterADC.at(counterDist));
                                 }
  
                                //if(maxChDist < clusterADC.at(counterDist))
@@ -1700,6 +1890,38 @@ int main(int argc, char *argv[])
                             MultFakeCount++;
                         }
                         multProfAll->Fill(bunchNrsOUT->at(i), multDist);
+                        //@MJ@ TODO for larger bx thab first one the smae plots here
+
+                       if(bunchNrsOUT->at(i) != 2306)
+                       {
+                           RMSaf->Fill(baselineRMSMtxOUT->at(i).at(b) );
+                           RMSvsBLaf->Fill(baselineRMSMtxOUT->at(i).at(b), baselinesMtxOUT->at(i).at(b) );
+                           PRMSvsBLaf->Fill(baselineRMSMtxOUT->at(i).at(b), baselinesMtxOUT->at(i).at(b) );
+                           BLvsRMSaf->Fill( baselinesMtxOUT->at(i).at(b),baselineRMSMtxOUT->at(i).at(b) );
+                           PBLvsRMSaf->Fill( baselinesMtxOUT->at(i).at(b), baselineRMSMtxOUT->at(i).at(b) );
+                           BLaf->Fill( baselinesMtxOUT->at(i).at(b) );
+                           RMSvsMULTaf->Fill(baselineRMSMtxOUT->at(i).at(b), multDist);
+                           PRMSvsMULTaf->Fill(baselineRMSMtxOUT->at(i).at(b), multDist);
+                           if(strpDist!=0)
+                           {
+                           RMSvsWIaf->Fill( baselineRMSMtxOUT->at(i).at(b),strpDist );
+                           PRMSvsWIaf->Fill( baselineRMSMtxOUT->at(i).at(b),strpDist );
+                           }
+                           BLvsMULTaf->Fill(baselinesMtxOUT->at(i).at(b), multDist);
+                           PBLvsMULTaf->Fill(baselinesMtxOUT->at(i).at(b), multDist);
+                           RMSvsSLaf->Fill( baselineRMSMtxOUT->at(i).at(b),PSSlope20MtxOUT->at(i).at(b)  );
+                           PRMSvsSLaf->Fill( baselineRMSMtxOUT->at(i).at(b),PSSlope20MtxOUT->at(i).at(b)  );
+                           BLvsSLaf->Fill( baselinesMtxOUT->at(i).at(b), PSSlope20MtxOUT->at(i).at(b));
+                           PBLvsSLaf->Fill( baselinesMtxOUT->at(i).at(b), PSSlope20MtxOUT->at(i).at(b));
+                           SLaf->Fill(  PSSlope20MtxOUT->at(i).at(b));
+                       }
+                       if(bunchNrsOUT->at(i) == 2315 &&  baselinesMtxOUT->at(i-1).at(b)>100 && baselinesMtxOUT->at(i-2).at(b)>100 && baselinesMtxOUT->at(i-3).at(b)>100 )
+                       {
+                           BLvsRMSafNORMAL->Fill( baselinesMtxOUT->at(i).at(b),baselineRMSMtxOUT->at(i).at(b) );
+                           PBLvsRMSafNORMAL->Fill( baselinesMtxOUT->at(i).at(b), baselineRMSMtxOUT->at(i).at(b) );
+                           BLvsMULTafNORMAL->Fill(baselinesMtxOUT->at(i).at(b), multDist);
+                           PBLvsMULTafNORMAL->Fill(baselinesMtxOUT->at(i).at(b), multDist);
+                       }
                     //resolution on charge and multiplicity
                 }
                 
@@ -1757,6 +1979,7 @@ int main(int argc, char *argv[])
 
                 //histos.baselineHist->SetBinContent(i*baselines.size()+b, baselines.at(b));//+b*10);
             }
+            APVsize = baselinesMtxOUT->at(i).size();
         }
         double eff = ofHIP/total;
         if(eff !=  0)
@@ -1764,6 +1987,16 @@ int main(int argc, char *argv[])
                 //cout << "here14 " << endl;
         myfile << "peak: " << peak << " multTot: " << multTot << endl; 
         HIPf->SetBinContent(moduleValueOUT, eff);
+        //cout << " probability 1 " << endl;
+        Int_t modBin = xaxis->FindBin(moduleValueOUT);
+        float avtracks = pTracking->GetBinContent(modBin);
+        float probability =0;
+        if( eff>0 && avtracks>0 && APVsize> 0)
+            probability = eff/(avtracks/APVsize);
+        cout << "fHIP " << eff << " ntracks " << avtracks << " APV in mod  " << APVsize << " probability " << probability << endl;
+        HIPp->SetBinContent(moduleValueOUT, probability);
+        //cout << " probability 1.2 " << endl;
+
         boffD->SetBinContent(moduleValueOUT, boffDown);
         boffU->SetBinContent(moduleValueOUT, boffUp);
         nHIP->SetBinContent(moduleValueOUT, ofHIP);
@@ -1780,14 +2013,21 @@ int main(int argc, char *argv[])
         ChHIP = mPBXvsCH2->GetBinContent(7);
         ChHIPPerMod->SetBinContent(moduleValueOUT,ChHIP);
 
+        float ChPOSTE = 0;
+        ChPOSTE += mPBXvsCH2->GetBinEntries(10);
+        ChPOSTE += mPBXvsCH2->GetBinEntries(13);
+        ChPOSTE += mPBXvsCH2->GetBinEntries(16);
+        ChPOSTE += mPBXvsCH2->GetBinEntries(19);
+        ChPOSTE += mPBXvsCH2->GetBinEntries(22);
+        ChPOSTE += mPBXvsCH2->GetBinEntries(25);
         ChPOST = 0;
-        ChPOST += mPBXvsCH2->GetBinContent(10);
-        ChPOST += mPBXvsCH2->GetBinContent(13);
-        ChPOST += mPBXvsCH2->GetBinContent(16);
-        ChPOST += mPBXvsCH2->GetBinContent(19);
-        ChPOST += mPBXvsCH2->GetBinContent(22);
-        ChPOST += mPBXvsCH2->GetBinContent(25);
-        ChPOSTPerMod->SetBinContent(moduleValueOUT,(double)ChPOST/6.0);
+        ChPOST += mPBXvsCH2->GetBinContent(10)*mPBXvsCH2->GetBinEntries(10);
+        ChPOST += mPBXvsCH2->GetBinContent(13)*mPBXvsCH2->GetBinEntries(13);
+        ChPOST += mPBXvsCH2->GetBinContent(16)*mPBXvsCH2->GetBinEntries(16);
+        ChPOST += mPBXvsCH2->GetBinContent(19)*mPBXvsCH2->GetBinEntries(19);
+        ChPOST += mPBXvsCH2->GetBinContent(22)*mPBXvsCH2->GetBinEntries(22);
+        ChPOST += mPBXvsCH2->GetBinContent(25)*mPBXvsCH2->GetBinEntries(25);
+        ChPOSTPerMod->SetBinContent(moduleValueOUT,(double)ChPOST/ChPOSTE);
 
         if(ChFakeCount!=0)
             ChFakePerMod->SetBinContent(moduleValueOUT,(double)ChFake/ChFakeCount);
@@ -1798,14 +2038,22 @@ int main(int argc, char *argv[])
         MultHIP = mmultProfAllHIP->GetBinContent(7);
         MultHIPPerMod->SetBinContent(moduleValueOUT,MultHIP);
 
+        float MultPOSTE = 0;
+        MultPOSTE += mmultProfAllHIP->GetBinEntries(10);
+        MultPOSTE += mmultProfAllHIP->GetBinEntries(13);
+        MultPOSTE += mmultProfAllHIP->GetBinEntries(16);
+        MultPOSTE += mmultProfAllHIP->GetBinEntries(19);
+        MultPOSTE += mmultProfAllHIP->GetBinEntries(22);
+        MultPOSTE += mmultProfAllHIP->GetBinEntries(25);
         MultPOST = 0;
-        MultPOST += mmultProfAllHIP->GetBinContent(10);
-        MultPOST += mmultProfAllHIP->GetBinContent(13);
-        MultPOST += mmultProfAllHIP->GetBinContent(16);
-        MultPOST += mmultProfAllHIP->GetBinContent(19);
-        MultPOST += mmultProfAllHIP->GetBinContent(22);
-        MultPOST += mmultProfAllHIP->GetBinContent(25);
-        MultPOSTPerMod->SetBinContent(moduleValueOUT,(double)MultPOST/6.0);
+        MultPOST += mmultProfAllHIP->GetBinContent(10)*mmultProfAllHIP->GetBinEntries(10);
+        MultPOST += mmultProfAllHIP->GetBinContent(13)*mmultProfAllHIP->GetBinEntries(13);
+        MultPOST += mmultProfAllHIP->GetBinContent(16)*mmultProfAllHIP->GetBinEntries(16);
+        MultPOST += mmultProfAllHIP->GetBinContent(19)*mmultProfAllHIP->GetBinEntries(19);
+        MultPOST += mmultProfAllHIP->GetBinContent(22)*mmultProfAllHIP->GetBinEntries(22);
+        MultPOST += mmultProfAllHIP->GetBinContent(25)*mmultProfAllHIP->GetBinEntries(25);
+
+        MultPOSTPerMod->SetBinContent(moduleValueOUT,(double)MultPOST/MultPOSTE);
 
         if(MultFakeCount!=0)
             MultFakePerMod->SetBinContent(moduleValueOUT,(double)MultFake/MultFakeCount);
@@ -1817,14 +2065,21 @@ int main(int argc, char *argv[])
         WiHIP = mPBXvsWI->GetBinContent(7);
         WiHIPPerMod->SetBinContent(moduleValueOUT,WiHIP);
 
+        float WiPOSTE = 0;
+        WiPOSTE += mPBXvsWI->GetBinEntries(10);
+        WiPOSTE += mPBXvsWI->GetBinEntries(13);
+        WiPOSTE += mPBXvsWI->GetBinEntries(16);
+        WiPOSTE += mPBXvsWI->GetBinEntries(19);
+        WiPOSTE += mPBXvsWI->GetBinEntries(22);
+        WiPOSTE += mPBXvsWI->GetBinEntries(25);
         WiPOST = 0;
-        WiPOST += mPBXvsWI->GetBinContent(10);
-        WiPOST += mPBXvsWI->GetBinContent(13);
-        WiPOST += mPBXvsWI->GetBinContent(16);
-        WiPOST += mPBXvsWI->GetBinContent(19);
-        WiPOST += mPBXvsWI->GetBinContent(22);
-        WiPOST += mPBXvsWI->GetBinContent(25);
-        WiPOSTPerMod->SetBinContent(moduleValueOUT,(double)WiPOST/6.0);
+        WiPOST += mPBXvsWI->GetBinContent(10)*mPBXvsWI->GetBinEntries(10);
+        WiPOST += mPBXvsWI->GetBinContent(13)*mPBXvsWI->GetBinEntries(13);
+        WiPOST += mPBXvsWI->GetBinContent(16)*mPBXvsWI->GetBinEntries(16);
+        WiPOST += mPBXvsWI->GetBinContent(19)*mPBXvsWI->GetBinEntries(19);
+        WiPOST += mPBXvsWI->GetBinContent(22)*mPBXvsWI->GetBinEntries(22);
+        WiPOST += mPBXvsWI->GetBinContent(25)*mPBXvsWI->GetBinEntries(25);
+        WiPOSTPerMod->SetBinContent(moduleValueOUT,(double)WiPOST/WiPOSTE);
 
         if(WiFakeCount!=0)
             WiFakePerMod->SetBinContent(moduleValueOUT,(double)WiFake/WiFakeCount);
@@ -1982,7 +2237,7 @@ int main(int argc, char *argv[])
     TH1F* HIPa = new TH1F("HIPa", "HIPa", 10 ,0 ,11 ); //@MJ@ TODO do this better!!!!
 
     TF1 *myfit = new TF1("myfit","[0]-exp(-x/[1])", 0, 11);
-
+cout << "in here 1" << endl;
     uint32_t ne = 0;
     if(moduleHIP.size() != 0)
     {
@@ -1998,6 +2253,7 @@ int main(int argc, char *argv[])
             }
            
         }
+cout << "in here 2" << endl;
 
         float diff = binContent/binEntry;
         float ediff = 10/sqrt(binEntry);
@@ -2050,6 +2306,7 @@ int main(int argc, char *argv[])
     float cleanedmaxbinContentCH = 0;
     float binContentCHERR = 0;
     float binContentMULTERR = 0;
+cout << "in here 3" << endl;
     if(moduleCHRG.size() != 0)
     {
     for(uint32_t b = 0; b<moduleCHRG.at(0).GetNbinsX(); b++ )
@@ -2090,6 +2347,7 @@ int main(int argc, char *argv[])
            
         }
 
+cout << "in here 4" << endl;
 
         float diffCH = binContentCH/binEntryCH;
         float diffMULT = binContentMULT/binEntryM;
@@ -2217,6 +2475,7 @@ int main(int argc, char *argv[])
     chargePOST->Write();
     multUnc->Write();
     HIPf->Write();
+    HIPp->Write();
     nHIP->Write();
     nHIP2->Write();
     boffD->Write();
@@ -2233,12 +2492,14 @@ int main(int argc, char *argv[])
     baselineVsRMSHIP->Write();
     baselineVsRMSPOST->Write();
     PbaselineVsRMSall->Write();
+    PbaselineVsRMSallColl->Write();
     PbaselineVsRMSPRE->Write();
     PbaselineVsRMSHIP->Write();
     PbaselineVsRMSPOST->Write();
     for(uint32_t k = 0; k< baselineVsRMSallPerMod.size(); k++)
     {
         baselineVsRMSallPerMod.at(k)->Write();
+        PbaselineVsRMSallPerMod.at(k)->Write();
     }
     RMS->Write();
     RMSall->Write();
@@ -2483,6 +2744,49 @@ int main(int argc, char *argv[])
     WiPOSTPerMod->Write();
     WiFakePerMod->Write();
     WiCollPerMod->Write();
+
+
+    ChDistHIPPerMod->Write();
+    ChDistPOSTPerMod->Write();
+    ChDistFakePerMod->Write();
+    ChDistCollPerMod->Write();
+
+    RMSvsBLaf->Write();
+    PRMSvsBLaf->Write();
+    BLvsRMSaf->Write();
+    PBLvsRMSaf->Write();
+    BLvsRMSafNORMAL->Write();
+    PBLvsRMSafNORMAL->Write();
+    RMSvsMULTaf->Write();
+    PRMSvsMULTaf->Write();
+    BLvsMULTafNORMAL->Write();
+    PBLvsMULTafNORMAL->Write();
+    RMSvsWIaf->Write();
+    PRMSvsWIaf->Write();
+    BLvsMULTaf->Write();
+    PBLvsMULTaf->Write();
+    RMSvsSLaf->Write() ;
+    PRMSvsSLaf->Write() ;
+    BLvsSLaf->Write() ;
+    PBLvsSLaf->Write() ;
+    BLaf->Write();
+    RMSaf->Write();
+    SLaf->Write();
+
+    RMSvsBLafHIP->Write();
+    PRMSvsBLafHIP->Write();
+    BLvsRMSafHIP->Write();
+    PBLvsRMSafHIP->Write();
+    RMSvsMULTafHIP->Write();
+    PRMSvsMULTafHIP->Write();
+    RMSvsWIafHIP->Write();
+    PRMSvsWIafHIP->Write();
+    BLvsMULTafHIP->Write();
+    PBLvsMULTafHIP->Write();
+    RMSvsSLafHIP->Write() ;
+    PRMSvsSLafHIP->Write() ;
+    BLvsSLafHIP->Write() ;
+    PBLvsSLafHIP->Write() ;
 
     myfile.close();
     evfile.close();

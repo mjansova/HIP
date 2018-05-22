@@ -283,8 +283,25 @@ int main(int argc, char *argv[])
 
                  //cout << "in here iii" << endl;
                     //cout << "subdet id: " << int((moduleKeys->at(position)>>25)&0x7) << " layer: " << int((moduleKeys->at(position)>>14)&0x7) << endl;
+                 if(partition == 3 || partition == 5 ) //barrels
+                 {
                     if((int((moduleKeys->at(position)>>25)&0x7) != partition) || (int((moduleKeys->at(position)>>14)&0x7) != layer))
                         continue;
+                 }
+                 else if(partition == 4 )
+                 {
+                    if((int((moduleKeys->at(position)>>25)&0x7) != partition) || (int((moduleKeys->at(position)>>11)&0x3) != layer))
+                        continue;
+                 }
+                 else if(partition == 6 )
+                 {
+                    if((int((moduleKeys->at(position)>>25)&0x7) != partition) || (int((moduleKeys->at(position)>>14)&0xF) != layer))
+                        continue;
+                 }
+                 else
+                 {
+                     continue;
+                 }
                  //cout << "in here iv" << endl;
 
                     static const uint32_t start = position;

@@ -140,6 +140,7 @@ class SiStripBaselineAnalyzer : public edm::EDAnalyzer {
           TH1F* h1BaselinesNonFlat_;	  
           TH1F* h1BaselinesFlat_;	  
           TH2D* h2rcZSdigiaselines_;	  
+          TH2D* h2Baselines_;	  
           TH2D* h2BaselinesVsCharge_;	  
           TH2D* h2BaselinesVsTotCharge_;	  
 
@@ -272,12 +273,13 @@ SiStripBaselineAnalyzer::SiStripBaselineAnalyzer(const edm::ParameterSet& conf):
   h1ClusterSigma_ = fs_->make<TH1I>("ClusterSigma","Cluster Sigma;Cluster Sigma;nCluster", 60, 0, 50);
 
     
-      /*std::vector<std::vector<string> >     mydata;
-      std::ifstream          myfile("hip_events_l1_VRnew.txt");
+     /* std::vector<std::vector<string> >     mydata;
+      std::ifstream          myfile("sEventFileModules_part_5_l_1_hipevents.txt");
     
       std::string   myline;
       while(std::getline(myfile, myline))
       {
+         //cout << " still soem lien "  << endl;
          std::vector<string>   mylineData;
          std::stringstream  mylineStream(myline);
          string myvalue;
@@ -334,15 +336,17 @@ SiStripBaselineAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& es)
    edm::EventNumber_t const event = e.id().event();
    eventNr = static_cast<UInt_t>(event);
 
+      uint32_t passedBl= 0;
+      uint32_t notpassedBl= 0;
 
-   uint32_t desiredModule = 0;
+   /*uint32_t desiredModule = 0;
    std::map<int,info>::iterator  it = HIPmap.find(eventNr);
-   //if (it == HIPmap.end())  //@MJ@ TODO on demand!
-   //    return;
-   //else
-   //    desiredModule = it->second.HIPmodule;
+   if (it == HIPmap.end())  //@MJ@ TODO on demand!
+       return;
+   else
+       desiredModule = it->second.HIPmodule;
       
-   cout << "HIP found!!!" << endl;
+   cout << "HIP found!!!" << endl;*/
 
    bool ClusterDists = false;
    using namespace edm;
@@ -425,6 +429,7 @@ SiStripBaselineAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& es)
    runNr = static_cast<UInt_t>(run);
    int bunch = e.bunchCrossing(); 
 
+   cout << " bunch crossing  " <<  bunch << endl;
    edm::Timestamp const timestamp = e.time();
    edm::TimeValue_t timeVal = timestamp.value();
    timeT = static_cast<ULong64_t>(timeVal);
@@ -443,7 +448,7 @@ SiStripBaselineAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& es)
    edm::DetSetVector<SiStripRawDigi>::const_iterator itRawDigis = moduleRawDigi->begin();
    
    uint32_t NBabAPVs = moduleRawDigi->size();     
-   std::cout<< "Number of module with HIP in this event: " << NBabAPVs << std::endl;
+   //std::cout<< "Number of module with HIP in this event: " << NBabAPVs << std::endl;
    h1BadAPVperEvent_->Fill(NBabAPVs);
    
    for (; itRawDigis != moduleRawDigi->end(); ++itRawDigis) {
@@ -451,9 +456,11 @@ SiStripBaselineAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& es)
       if(actualModule_ > nModuletoDisplay_) {return;}
       uint32_t detId = itRawDigis->id;
       moduleIdx.push_back(detId);
-     // if(detId != desiredModule) //@MJ@ TODO on demand
-     //     continue;
+      //DetId mDetId = DetId(detId  );
+      //if(detId != desiredModule) //@MJ@ TODO on demand
+      //    continue;
  
+      //cout << " subdetid which has passed  " << mDetId.subdetId() << endl;
       //std::cout << "time : " << time << "t diff" << tDiff << std::endl;
       sprintf(detIds,"%u", detId);
       sprintf(evs,"%llu", event);
@@ -524,12 +531,87 @@ SiStripBaselineAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& es)
       	maxx = maxAPVRes * 128 + 127.5;
       	bins = maxx-minx;
       }
+
+
+      if(bunch  != 2306 )
+          continue;
       
-      std::map<int,info>::iterator it2 = HIPmap.find(eventNr);
+      cout << "bx found" << endl;
+      uint32_t negativeBl= 0;
+      uint32_t rh=0;
+      bool isHIP = false;
+      
+      edm::DetSet<SiStripRawDigi>::const_iterator itRaw3 = itRawDigis->begin(); 
+      for(; itRaw3 != itRawDigis->end(); ++itRaw3, ++rh){
+
+            vector<float> rms;
+            if(rh == 0 || rh%128==0)
+            { 
+                edm::DetSet<SiStripRawDigi>::const_iterator itRaw4 = itRaw3;
+                cout << "itraw3 " << &itRaw3 << " itear4 " << &itRaw4 << endl;
+                for(uint32_t a = 0; a<128; a++ )
+                {
+                    rms.push_back((itRaw4+a)->adc());
+                }
+                std::sort(rms.begin(), rms.end());
+                float sum = 0;
+                float av = 0;
+                float RMSstrips = rms.size()-26; //20%
+                for(uint32_t r=0; r<RMSstrips; r++)
+                {
+                    sum +=rms.at(r);
+                }
+                av = sum/RMSstrips;
+
+                float rmsSum =0;
+                float rmsRes =0;
+                for(uint32_t v=0; v<RMSstrips; v++)
+                {
+                    rmsSum += pow(rms.at(v)-av,2);
+                }
+
+                rmsRes = sqrt(rmsSum/RMSstrips);
+                cout << "rms " << rmsRes << endl;
+                if(rmsRes<2.5)
+                    isHIP = true;
+                if((itDSBaseline->begin()+rh)->adc() > -5)
+                    isHIP = false;
+                cout << "rms " << rmsRes << " baseline " << (itDSBaseline->begin()+rh)->adc() << endl;
+            }
+            if(isHIP)
+                break;
+       }
+
+       if(isHIP == false)
+           continue;
+       cout << "HIP found in loop" << endl; 
+
+     /* for( edm::DetSet<SiStripProcessedRawDigi>::const_iterator  itBaseline2 = itDSBaseline->begin(); itBaseline2 != itDSBaseline->end(); itBaseline2++ )
+      {  
+ 
+          //cout << "baseline value " << itBaseline2->adc() << endl;
+          if(itBaseline2->adc() > 200 )
+              negativeBl++;
+      }
+     
+       */
+      cout << "overshoot baseline " << negativeBl << endl; 
+ 
+     /* if(negativeBl != 128)
+      {
+          notpassedBl++;
+          cout << "baseline continuing not passed " <<  notpassedBl << endl;
+          continue;
+      }*/
+    
+      passedBl++;
+      cout << "passed baseline " << passedBl << " Id " << detIds << endl;; 
+      //std::map<int,info>::iterator it2 = HIPmap.find(eventNr);
       //if(it2 == HIPmap.end())  //@MJ@ TODO on demand
-      //    throw std::runtime_error("The event should be somewhere!!!!");
-      char* dHistoName = Form("Id%s_run%s_ev%s_b%s_%s_%s",detIds, runs, evs, bunches, it2->second.HIPinfo.c_str() , it2->second.HIPnr.c_str()); //TODO get remark from map
-      //char* dHistoName2 = Form("Id%s_run%s"s);
+     //     throw std::runtime_error("The event should be somewhere!!!!");
+      char* dHistoName = Form("Id%s_run%s_ev%s_b%s",detIds, runs, evs, bunches);// it2->second.HIPinfo.c_str() , it2->second.HIPnr.c_str()); //TODO get remark from map
+      //char* dHistoName = Form("Id%s_run%s_ev%s_b%s_%s_%s",detIds, runs, evs, bunches, it2->second.HIPinfo.c_str() , it2->second.HIPnr.c_str()); //TODO get remark from map
+      //char* dHistoName = Form("Id%s_run%s"s);
       h1ProcessedRawDigis_ = sdProcessedRawDigis_.make<TH1F>(dHistoName,dHistoName, bins, minx, maxx); 
       h1RawDigis_ = sdRawDigis_.make<TH1F>(dHistoName,dHistoName, bins, minx, maxx); 
       h1ZSdigis_ = sdZSdigis_.make<TH1F>(dHistoName,dHistoName, bins, minx, maxx); 
@@ -592,8 +674,20 @@ SiStripBaselineAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& es)
       h1ZSdigis_->SetMinimum(-300.);
       h1ZSdigis_->SetLineWidth(2);
        
-      std::vector<int16_t> ProcessedRawDigis(itRawDigis->size());
-      subtractorPed_->subtract( *itRawDigis, ProcessedRawDigis);
+
+      /*std::vector<int16_t> ProcessedRawDigis(itRawDigis->size());
+      std::vector<int16_t> ProcessedRawDigisPedSub(itRawDigis->size());
+      std::vector<int16_t> ProcessedRawDigisCMNSubAndBot(itRawDigis->size());
+      subtractorPed_->subtract( *itRawDigis, ProcessedRawDigis, ProcessedRawDigisPedSub, ProcessedRawDigisCMNSubAndBot);
+
+      edm::DetSet<SiStripProcessedRawDigi>::const_iterator  itBaseline;
+      itBaseline = itDSBaseline->begin();
+
+      std::vector<int16_t>::const_iterator itProcessedRawDigis;
+      std::vector<int16_t>::const_iterator itProcessedRawDigisPedSub = ProcessedRawDigisPedSub.begin();
+      std::vector<int16_t>::const_iterator itProcessedRawDigisCMNSubAndBot = ProcessedRawDigisCMNSubAndBot.begin();
+*/
+
       //std::cout << "raw digi size: " << itRawDigis->size() << std::endl;
 
       edm::DetSet<SiStripProcessedRawDigi>::const_iterator  itBaseline;
@@ -601,7 +695,6 @@ SiStripBaselineAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& es)
       {
           itBaseline = itDSBaseline->begin(); 
       }
-      std::vector<int16_t>::const_iterator itProcessedRawDigis;
      
       strip =0;
       int32_t num = 0;
@@ -627,11 +720,20 @@ SiStripBaselineAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& es)
       uint16_t myCMaxCharge = 0;
       uint16_t myCCenter = 0;
       double sumx = 0;
- 
+
+      std::vector<int16_t> ProcessedRawDigis(itRawDigis->size());
+      subtractorPed_->subtract( *itRawDigis, ProcessedRawDigis);
+
+      std::vector<int16_t>::const_iterator itProcessedRawDigis;
       for(itProcessedRawDigis = ProcessedRawDigis.begin();itProcessedRawDigis != ProcessedRawDigis.end(); itProcessedRawDigis++){ 
+     ///       for(itProcessedRawDigis = ProcessedRawDigis.begin();itProcessedRawDigis != ProcessedRawDigis.end(); itProcessedRawDigis++, itProcessedRawDigisPedSub++, itProcessedRawDigisCMNSubAndBot++){
+
        	if(restAPV[strip/128]){
           //std::cout << "bla" << std::endl;
 	  float adc = *itProcessedRawDigis;     
+            //float adcPS = *itProcessedRawDigisPedSub;
+            //float adcCMNS = *itProcessedRawDigisCMNSubAndBot;
+          //cout << "adc " << adc << " adcPS " << adcPS << " adcCMNS " << adcCMNS << endl;
 	  h1ProcessedRawDigis_->Fill(strip, adc);
           totCharge += adc;
           if(abs(adc -  itBaseline->adc()+1) > hitStripThreshold_)
@@ -812,6 +914,7 @@ SiStripBaselineAnalyzer::analyze(const edm::Event& e, const edm::EventSetup& es)
           ClusterDists = true;
         }
       }
+      
    //}		@MJ@ TODO
 
     if (plotBaseline_)
